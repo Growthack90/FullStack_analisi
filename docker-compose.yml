@@ -1,0 +1,14 @@
+services:
+  node-app:
+    build: ./node-app
+    ports:
+      - "8080:${PORT}" # Espone l'app su localhost:8080
+    env_file: .env
+    depends_on:
+      - python-worker
+
+  python-worker:
+    build: ./python-worker
+    env_file: .env
+    volumes:
+      - ./python-worker/config.conf:/app/config.conf
