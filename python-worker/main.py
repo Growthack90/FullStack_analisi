@@ -1,24 +1,31 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import configparser
-import os
 
 app = Flask(__name__)
 
-def get_config():
-    config = configparser.ConfigParser()
-    config.read('config.conf')
-    return config
+# Simuliamo un database in memoria
+data_store = {
+    1: {"text": "Esempio positivo", "score": 0.9},
+    2: {"text": "Esempio negativo", "score": 0.1}
+}
 
-@app.route('/process')
-def process():
-    config = get_config()
-    threshold = config.get('ANALYSIS', 'threshold', fallback="0.5")
-    return jsonify({
-        "status": "online",
-        "result": "Analisi completata",
-        "threshold": threshold,
-        "api_key_last_chars": os.getenv('API_KEY', '')[-4:]
-    })
+@app.route('/items', methods=['GET'])
+def get_all():
+    return jsonify(list(data_store.values()))
+
+@app.route('/items', methods=['POST'])
+def create():
+    new_id = max(data_store.keys()) + 1
+    content = request.json
+    data_store[new_id] = content
+    return jsonify({"id": new_id, "status": "created"}), 201
+
+@app.route('/items/<int:item_id>', methods=['DELETE'])
+def delete(item_id):
+    if item_id in data_store:
+        del data_store[item_id]
+        return jsonify({"status": "deleted"})
+    return jsonify({"error": "not found"}), 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

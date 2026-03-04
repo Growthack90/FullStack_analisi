@@ -15,3 +15,11 @@ npm start
 ```
 
 Nota: l'endpoint `/analyze` richiede anche il servizio Python disponibile su `PYTHON_SERVICE_URL`.
+
+## Dipendenze utili per il progetto
+
+```bash
+cd node-app
+npm install express
+npm install axios
+```

@@ -57,31 +57,6 @@ Se vuoi fare tabula rasa sul tuo MacBook Air con un unico "comando nucleare" che
 docker system prune -a --volumes -f
 ```
 
-## Endpoint
-
-### `GET /analyze`
-
-URL:
-
-```text
-http://localhost:8080/analyze
-```
-
-Risposta di esempio:
-
-```json
-{
-  "gateway": "Node.js",
-  "worker_response": {
-    "status": "online",
-    "result": "Analisi completata",
-    "threshold": "0.99",
-    "api_key_last_chars": "1234"
-  },
-  "env_check": "Presente"
-}
-```
-
 ## Personalizzazione analisi
 
 Puoi modificare i parametri del worker in:
@@ -124,6 +99,76 @@ debug_mode = true
 * **`.env` -> Node/Python:** Docker Compose prende le variabili da `.env` e le inietta nel sistema operativo dei container. In Node le leggi con `process.env`, in Python con `os.getenv`.
 * **`docker-compose.yml` -> DNS interno:** All'interno della rete Docker, il container Node può "chiamare" il container Python usando il nome del servizio `python-worker` definito nel file YAML. Docker risolve automaticamente l'IP.
 * **`.conf` -> Python:** Questo file è "montato" (volume). Se cambi `threshold = 0.9` nel file sul tuo Mac, Python vedrà il cambiamento (dovrai solo riavviare il container o implementare un ricaricamento nel codice).
+
+
+## Testare operazioni CRUD
+
+Il gateway Node espone queste operazioni su `http://localhost:8080/api/data`:
+
+- `GET /api/data` (Read)
+- `POST /api/data` (Create)
+- `DELETE /api/data/:id` (Delete)
+
+> Nota: l'endpoint `UPDATE` (`PUT/PATCH`) non è ancora implementato, quindi al momento sono disponibili operazioni **CRD**.
+
+Prima avvia i servizi:
+
+```bash
+docker compose up --build -d
+```
+
+### Test da PowerShell (consigliato)
+
+GET:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri "http://localhost:8080/api/data"
+```
+
+POST:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/data" -ContentType "application/json" -Body '{"text":"Nuovo test","score":0.5}'
+```
+
+DELETE:
+
+```powershell
+Invoke-RestMethod -Method Delete -Uri "http://localhost:8080/api/data/1"
+```
+
+Test consigliato (evita `404`): crea prima un record e poi cancella l'`id` restituito.
+
+```powershell
+$created = Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/data" -ContentType "application/json" -Body '{"text":"Da cancellare","score":0.7}'
+Invoke-RestMethod -Method Delete -Uri ("http://localhost:8080/api/data/{0}" -f $created.id)
+```
+
+### Test con `curl.exe` (alternativa)
+
+GET:
+
+```bash
+curl.exe http://localhost:8080/api/data
+```
+
+POST:
+
+```bash
+curl.exe -X POST -H "Content-Type: application/json" -d "{\"text\":\"Nuovo test\",\"score\":0.5}" http://localhost:8080/api/data
+```
+
+DELETE:
+
+```bash
+curl.exe -X DELETE http://localhost:8080/api/data/1
+```
+
+Se provi a cancellare un ID già rimosso (o mai esistito), l'API risponde `404` con:
+
+```json
+{"error":"not found"}
+```
 
 
 ### Evolutiva: Verso Kubernetes (K8s)
